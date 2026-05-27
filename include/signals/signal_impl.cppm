@@ -1,8 +1,8 @@
 module;
 
-export module signals:impl;
+export module signals:signal_impl;
 
-import signals;
+import :signal;
 import std.compat;
 
 export namespace signals {

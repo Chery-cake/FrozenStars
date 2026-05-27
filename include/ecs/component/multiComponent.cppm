@@ -3,7 +3,7 @@ module;
 export module ecs.component:multiComponent;
 
 import std.compat;
-import ecs.component.detail;
+import :dependencies;
 
 namespace ecs::component {
 
@@ -29,8 +29,8 @@ template <typename T, size_t N> struct MultiComponent {
 };
 
 template <typename T, size_t N>
-struct detail::ComponentDependencies<MultiComponent<T, N>> {
-  using required = typename detail::ComponentDependencies<T>::required;
+struct ComponentDependencies<MultiComponent<T, N>> {
+  using required = typename ComponentDependencies<T>::required;
 };
 
 template <typename T> struct DynamicMultiComponent {
@@ -58,9 +58,8 @@ template <typename T> struct DynamicMultiComponent {
   [[nodiscard]] size_t size() const { return components.size(); }
 };
 
-template <typename T>
-struct detail::ComponentDependencies<DynamicMultiComponent<T>> {
-  using required = typename detail::ComponentDependencies<T>::required;
+template <typename T> struct ComponentDependencies<DynamicMultiComponent<T>> {
+  using required = typename ComponentDependencies<T>::required;
 };
 
 } // namespace ecs::component

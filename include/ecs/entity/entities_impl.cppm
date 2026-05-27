@@ -1,9 +1,9 @@
 module;
 
-export module ecs.entity:impl;
+export module ecs.entity:entities_impl;
 
 import std;
-import ecs.entity;
+import :entities;
 
 export namespace ecs::entity {
 

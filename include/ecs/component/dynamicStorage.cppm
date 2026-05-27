@@ -3,7 +3,7 @@ module;
 export module ecs.component:dynamicStorage;
 
 import std.compat;
-import ecs.component.detail;
+import :dependencies;
 
 export namespace ecs::component {
 
@@ -31,7 +31,7 @@ private:
   }
 
   template <typename T> bool meets_dependencies_unsafe() const {
-    using Reqs = typename detail::ComponentDependencies<T>::required;
+    using Reqs = typename ComponentDependencies<T>::required;
     return check_requirements<Reqs>::all_exist(*this);
   }
 

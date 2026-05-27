@@ -20,6 +20,7 @@ Diagnostics:
     Remove:
       - modernize-use-trailing-return-type
       - readability-identifier-length
+      - bugprone-easily-swappable-parameters
       
 Index:
   Background: Build

@@ -2,10 +2,10 @@ module;
 
 #include <cstdio>
 
-export module memory.allocator:impl;
+export module memory.allocator:allocators_impl;
 
 import std.compat;
-import memory.allocator;
+import :allocators;
 
 export namespace memory::allocator {
 

@@ -1,6 +1,6 @@
 module;
 
-export module memory.allocator;
+export module memory.allocator:allocators;
 
 import std.compat;
 

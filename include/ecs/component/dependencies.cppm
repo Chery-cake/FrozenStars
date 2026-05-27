@@ -1,9 +1,9 @@
 module;
 
-export module ecs.component.detail;
+export module ecs.component:dependencies;
 import std.compat;
 
-export namespace ecs::component::detail {
+export namespace ecs::component {
 
 template <typename... Args> struct ComponentDependencies {
   using required = std::tuple<>;
@@ -38,4 +38,4 @@ template <typename... Components> constexpr bool all_dependencies_satisfied() {
           ...);
 }
 
-} // namespace ecs::component::detail
+} // namespace ecs::component

@@ -2,7 +2,7 @@ module;
 
 #include <cstdint>
 
-export module signals;
+export module signals:signal;
 
 import std.compat;
 
@@ -105,7 +105,8 @@ public:
    * @return A ScopedConnection that can be used for manual control.
    */
   template <typename Signature, typename Slot>
-  ScopedConnection<Signature> connect(std::shared_ptr<Signals<Signature>> signal, Slot &&slot);
+  ScopedConnection<Signature>
+  connect(std::shared_ptr<Signals<Signature>> signal, Slot &&slot);
 
   /**
    * Manually add a disconnector function.
