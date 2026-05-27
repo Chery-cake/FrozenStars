@@ -5,7 +5,7 @@ export module ecs.component:multiComponent;
 import std.compat;
 import :dependencies;
 
-namespace ecs::component {
+export namespace ecs::component {
 
 template <typename T, size_t N> struct MultiComponent {
   std::array<T, N> components;
@@ -14,7 +14,9 @@ template <typename T, size_t N> struct MultiComponent {
 
   template <typename... Args>
     requires(sizeof...(Args) == N)
-  MultiComponent(Args &&...args) : components(std::forward<Args>(args)...) {}
+  MultiComponent(Args &&...args) : components{std::forward<Args>(args)...} {}
+
+  MultiComponent(std::array<T, N> array) : components(std::move(array)) {}
 
   T &operator[](size_t i) { return components[i]; }
   const T &operator[](size_t i) const { return components[i]; }

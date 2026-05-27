@@ -12,8 +12,8 @@ export namespace concurrency::pool {
 inline ThreadPool::ThreadPool(const Pool &pool, size_t num_threads) {
   switch (pool.queueKind) {
   default:
-  case concurrency::queues::QueueKind::FIFO:
-    queue_ = std::make_unique<concurrency::queues::FifoTaskQueue>();
+  case queues::QueueKind::FIFO:
+    queue_ = std::make_unique<queues::FifoTaskQueue>();
     break;
   }
 
@@ -23,7 +23,7 @@ inline ThreadPool::ThreadPool(const Pool &pool, size_t num_threads) {
   threads_.reserve(threads);
 
   std::ranges::for_each(
-      std::views::iota(threads, 0U),
+      std::views::iota(0U, threads),
       [&threads = threads_, &queue = queue_](size_t) {
         threads.emplace_back(
             [&queue](const std::stop_token &st) { worker_loop(st, *queue); });
@@ -38,8 +38,14 @@ inline ThreadPool::~ThreadPool() {
 }
 
 inline void ThreadPool::worker_loop(const std::stop_token &stoken,
-                                    concurrency::queues::TaskQueue &queue) {
-  concurrency::queues::Task task;
+                                    queues::TaskQueue &queue) {
+  struct WorkerGuard {
+    ~WorkerGuard() { coroutine::isPoolWorker = false; }
+
+  } guard;
+  coroutine::isPoolWorker = true;
+
+  queues::Task task;
   while (!stoken.stop_requested() && queue.try_pop(task)) {
     if (task) {
       task();
@@ -84,7 +90,7 @@ inline void ThreadPool::resize(size_t new_size) {
     stop_source_ = std::stop_source{};
 
     std::ranges::for_each(
-        std::views::iota(new_size, 0U),
+        std::views::iota(0U, new_size),
         [&threads = threads_, &queue = queue_](size_t) {
           threads.emplace_back(
               [&queue](const std::stop_token &st) { worker_loop(st, *queue); });

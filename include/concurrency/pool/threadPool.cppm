@@ -12,8 +12,7 @@ export namespace concurrency::pool {
 
 struct Pool {
   std::string name;
-  concurrency::queues::QueueKind queueKind =
-      concurrency::queues::QueueKind::FIFO;
+  queues::QueueKind queueKind = queues::QueueKind::FIFO;
 
   bool operator<=>(const Pool &) const = default;
 };
@@ -21,9 +20,9 @@ struct Pool {
 class ThreadPool {
 private:
   static void worker_loop(const std::stop_token &stoken,
-                          concurrency::queues::TaskQueue &queue);
+                          queues::TaskQueue &queue);
 
-  std::unique_ptr<concurrency::queues::TaskQueue> queue_;
+  std::unique_ptr<queues::TaskQueue> queue_;
   std::vector<std::jthread> threads_;
   std::stop_source stop_source_;
 

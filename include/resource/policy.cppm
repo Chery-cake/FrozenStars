@@ -2,7 +2,7 @@ module;
 
 export module resource:policy;
 
-import std;
+import std.compat;
 
 export namespace resource {
 

@@ -2,7 +2,7 @@ module;
 
 export module ecs.entity:entities_impl;
 
-import std;
+import std.compat;
 import :entities;
 
 export namespace ecs::entity {
