@@ -2,7 +2,10 @@
 # Tests - Main Configuration
 # ==============================================================================
 
-function(add_tests_from_folder FOLDER LIBRARY PREFIX)
+function(add_tests_from_folder FOLDER)
+    set(multiValueArgs LIBRARY)
+    cmake_parse_arguments(ARG "" "" "${multiValueArgs}" ${ARGN})
+
     file(GLOB test_files CONFIGURE_DEPENDS "${FOLDER}/test*.c*")
 
     file(GLOB helper CONFIGURE_DEPENDS "${FOLDER}/helper*.c*")
@@ -10,7 +13,7 @@ function(add_tests_from_folder FOLDER LIBRARY PREFIX)
     foreach(test_file ${test_files})
         get_filename_component(test_exe ${test_file} NAME_WE)
         string(REGEX REPLACE "^test_" "" base_name ${test_exe})
-        set(test_name "${PREFIX}_${base_name}")
+        set(test_name "${FOLDER}_${base_name}")
 
         add_executable(${test_exe} ${test_file})
 
@@ -20,7 +23,7 @@ function(add_tests_from_folder FOLDER LIBRARY PREFIX)
                 ${helper}
         )
 
-        target_link_libraries(${test_exe} PRIVATE ${LIBRARY})
+        target_link_libraries(${test_exe} PRIVATE ${ARG_LIBRARY})
         target_compile_definitions(${test_exe} PRIVATE
             $<$<CONFIG:Debug>:ENGINE_DEBUG>
         )
@@ -28,6 +31,25 @@ function(add_tests_from_folder FOLDER LIBRARY PREFIX)
     endforeach()
 endfunction()
 
-add_tests_from_folder("ecs" "FrozenStars" "ecs")
+add_tests_from_folder("ecs"
+    LIBRARY
+        FrozenStars
+)
+add_tests_from_folder("resource"
+    LIBRARY
+        FrozenStars
+)
+add_tests_from_folder("signals"
+    LIBRARY
+        FrozenStars
+)
+add_tests_from_folder("memory"
+    LIBRARY
+        FrozenStars
+)
+add_tests_from_folder("concurrency"
+    LIBRARY
+        FrozenStars
+)
 
 message(STATUS "Tests configured successfully")

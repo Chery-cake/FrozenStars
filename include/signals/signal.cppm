@@ -52,6 +52,8 @@ public:
   void emit_parallel(Args... args) const;
 
   template <typename Predicate>
+    requires((std::is_void_v<R> && std::is_invocable_r_v<bool, Predicate>) ||
+             (!std::is_void_v<R> && std::is_invocable_r_v<bool, Predicate, R>))
   void emit_until(Args... args, Predicate &&pred) const;
 
   std::vector<ConnectionId> connection_ids() const;
@@ -68,14 +70,14 @@ private:
 
 public:
   ScopedConnection() = default;
-  ScopedConnection(SignalType &signal, ConnectionId id,
+  ScopedConnection(std::shared_ptr<SignalType> signal, ConnectionId id,
                    bool auto_disconnect = true);
   ~ScopedConnection();
 
   ScopedConnection(const ScopedConnection &) = delete;
   ScopedConnection &operator=(const ScopedConnection &) = delete;
-  ScopedConnection(ScopedConnection &&other) = delete;
-  ScopedConnection &operator=(ScopedConnection &&other) = delete;
+  ScopedConnection(ScopedConnection &&other) noexcept;
+  ScopedConnection &operator=(ScopedConnection &&other) noexcept;
 
   void reset();
   [[nodiscard]] bool is_connected() const;
@@ -105,7 +107,8 @@ public:
    * @return A ScopedConnection that can be used for manual control.
    */
   template <typename Signature, typename Slot>
-  ScopedConnection<Signature>
+    requires std::is_constructible_v<typename Signals<Signature>::Slot, Slot>
+  std::expected<ScopedConnection<Signature>, ConnectionError>
   connect(std::shared_ptr<Signals<Signature>> signal, Slot &&slot);
 
   /**

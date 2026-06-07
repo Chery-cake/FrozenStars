@@ -97,9 +97,10 @@ T *Stack<size>::push(size_t alignment) {
   return reinterpret_cast<T *>(aligned_addr);
 }
 
-template <size_t size> void Stack<size>::pop(void *&ptr) {
+template <size_t size> template <typename T> void Stack<size>::pop(T *&ptr) {
   std::lock_guard<std::mutex> lock(this->memoryMutex_);
-  auto *header = reinterpret_cast<size_t *>(reinterpret_cast<uint8_t *>(ptr) -
+  void *vptr = static_cast<void *>(ptr);
+  auto *header = reinterpret_cast<size_t *>(reinterpret_cast<uint8_t *>(vptr) -
                                             sizeof(size_t));
   offset_ -= *header;
   ptr = nullptr;
@@ -120,7 +121,7 @@ Pool<T, poolSize>::Pool() : Memory<sizeof(T) * poolSize>() {
   constexpr size_t NodeAlignment = alignof(Node);
   uintptr_t aligned_base =
       (base_mem + NodeAlignment - 1) & ~(NodeAlignment - 1);
-  Node mem = reinterpret_cast<Node *>(aligned_base);
+  Node *mem = reinterpret_cast<Node *>(aligned_base);
 
   std::ranges::for_each(
       std::views::iota(size_t{0}, poolSize - 1), [&mem](size_t i) {

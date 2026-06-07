@@ -31,7 +31,11 @@ inline ThreadPool::ThreadPool(const Pool &pool, size_t num_threads) {
 }
 
 inline ThreadPool::~ThreadPool() {
-  stop_source_.request_stop();
+  {
+    std::unique_lock lock(mutex_);
+    std::ranges::for_each(threads_, [](std::jthread &t) { t.request_stop(); });
+  }
+
   if (queue_) {
     queue_->notify_all();
   }
@@ -46,7 +50,7 @@ inline void ThreadPool::worker_loop(const std::stop_token &stoken,
   coroutine::isPoolWorker = true;
 
   queues::Task task;
-  while (!stoken.stop_requested() && queue.try_pop(task)) {
+  while (!stoken.stop_requested() && queue.try_pop(task, stoken)) {
     if (task) {
       task();
     }
@@ -66,14 +70,22 @@ ThreadPool::submit(F &&f, Args &&...args) {
   return fut;
 }
 
-inline coroutine::Scheduler ThreadPool::schedule() noexcept {
-  return coroutine::Scheduler{*queue_};
+inline coroutine::Scheduler
+ThreadPool::schedule(coroutine::SchedulePolicy schedulePolicy) noexcept {
+  return coroutine::Scheduler(*queue_, schedulePolicy);
+}
+inline coroutine::Scheduler
+ThreadPool::schedule(queues::TaskQueue *queue,
+                     coroutine::SchedulePolicy schedulePolicy) noexcept {
+  return coroutine::Scheduler(*queue, schedulePolicy);
 }
 
 inline void ThreadPool::resize(size_t new_size) {
   std::unique_lock lock(mutex_);
   size_t current = threads_.size();
-  if (new_size >= current) {
+
+  if (new_size > current) {
+    threads_.reserve(new_size);
 
     std::ranges::for_each(
         std::views::iota(current, new_size),
@@ -81,20 +93,16 @@ inline void ThreadPool::resize(size_t new_size) {
           threads.emplace_back(
               [&queue](const std::stop_token &st) { worker_loop(st, *queue); });
         });
+    return;
+  }
 
-  } else {
-    stop_source_.request_stop();
-    queue_->notify_all();
-    std::ranges::for_each(threads_, [](std::jthread &j) { j.join(); });
-    threads_.clear();
-    stop_source_ = std::stop_source{};
+  if (new_size < current) {
+    std::ranges::for_each(threads_ | std::views::drop(new_size),
+                          [](std::jthread &t) { t.request_stop(); });
 
-    std::ranges::for_each(
-        std::views::iota(0U, new_size),
-        [&threads = threads_, &queue = queue_](size_t) {
-          threads.emplace_back(
-              [&queue](const std::stop_token &st) { worker_loop(st, *queue); });
-        });
+    threads_.erase(threads_.begin() + static_cast<std::ptrdiff_t>(new_size),
+                   threads_.end());
+    threads_.resize(new_size);
   }
 }
 

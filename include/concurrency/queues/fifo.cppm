@@ -11,8 +11,7 @@ struct FifoTaskQueue : public TaskQueue {
 private:
   std::queue<Task> queue_;
   std::mutex mutex_;
-  std::condition_variable cv_;
-  std::atomic<bool> stop_{false};
+  std::condition_variable_any cv_;
 
 public:
   void push(Task t) override {
@@ -23,22 +22,23 @@ public:
     cv_.notify_one();
   }
 
-  bool try_pop(Task &t) override {
+  bool try_pop(Task &t, const std::stop_token &stoken) override {
     std::unique_lock lock(mutex_);
-    cv_.wait(lock, [&queue = queue_, &stop = stop_] {
-      return !queue.empty() || stop.load();
-    });
-    if (queue_.empty()) {
+    cv_.wait(lock, stoken, [&queue = queue_] { return !queue.empty(); });
+    if (queue_.empty() || stoken.stop_requested()) {
       return false;
     }
+
     t = std::move(queue_.front());
     queue_.pop();
     return true;
   }
 
-  void notify_all() override {
-    stop_.store(true);
-    cv_.notify_all();
+  void notify_all() override { cv_.notify_all(); }
+
+  bool empty() override {
+    std::unique_lock lock(mutex_);
+    return queue_.empty();
   }
 };
 

@@ -31,6 +31,7 @@ bool Registry<Tag, Resource, Policy>::add(const Tag *tag,
 template <typename Tag, typename Resource, typename Policy>
   requires OwnerShipPolicy<Tag, Resource, Policy>
 template <typename... Args>
+  requires(!std::is_same_v<Policy, WeakPtrPolicy<Tag, Resource>>)
 bool Registry<Tag, Resource, Policy>::emplace(const Tag *tag, Args &&...args) {
   return add(tag, Policy::make_resource(*tag, std::forward<Args>(args)...));
 }
@@ -40,8 +41,8 @@ template <typename Tag, typename Resource, typename Policy>
 bool Registry<Tag, Resource, Policy>::set(const Tag *tag,
                                           typename Policy::InputType resource) {
 
-  typename Policy::ReturnType oldPtr;
-  typename Policy::ReturnType newPtr;
+  typename Policy::ReturnType oldPtr = nullptr;
+  typename Policy::ReturnType newPtr = nullptr;
   typename Policy::StoredType old;
   bool existed = false;
 
@@ -51,8 +52,8 @@ bool Registry<Tag, Resource, Policy>::set(const Tag *tag,
     existed = (it != resources_.end());
 
     if (existed) {
-      old = std::move(it->second);
       oldPtr = Policy::get_ptr(it->second);
+      old = std::move(it->second);
       resources_.erase(it);
     }
 
@@ -152,7 +153,7 @@ Registry<Tag, Resource, Policy>::extract(const Tag *tag) {
 template <typename Tag, typename Resource, typename Policy>
   requires OwnerShipPolicy<Tag, Resource, Policy>
 template <typename Func>
-  requires std::is_invocable_v<Func, Tag *, typename Policy::StoredType>
+  requires std::is_invocable_v<Func, Tag *, typename Policy::ReturnType>
 void Registry<Tag, Resource, Policy>::forEach(Func &&func) const {
   auto entries = getAll();
 

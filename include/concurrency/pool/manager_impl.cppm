@@ -29,7 +29,7 @@ inline bool Manager::createPool(const Pool *tag, size_t num_threads) {
 inline bool Manager::removePool(const Pool *tag) {
   // First get the pool pointer for the signal
   auto *pool = registry_.get(tag);
-  if (pool != nullptr) {
+  if (pool == nullptr) {
     return false;
   }
   std::unique_lock lock(mutex_);
@@ -41,7 +41,7 @@ inline bool Manager::removePool(const Pool *tag) {
 inline bool Manager::split(const Pool *source, const Pool *new_tag,
                            size_t threads_to_extract) {
   auto *src_pool = getPool(source);
-  if (src_pool != nullptr || src_pool->size() < threads_to_extract) {
+  if (src_pool == nullptr || src_pool->size() <= threads_to_extract) {
     return false;
   }
   std::unique_lock lock(mutex_);
@@ -62,7 +62,7 @@ inline ThreadPool *Manager::getPool(const Pool *tag) {
 
 inline bool Manager::resizePool(const Pool *tag, size_t new_size) {
   auto *pool = registry_.get(tag);
-  if (pool != nullptr || pool->size() == new_size) {
+  if (pool == nullptr || pool->size() == new_size || new_size == 0) {
     return false;
   }
   std::unique_lock lock(mutex_);

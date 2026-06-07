@@ -19,7 +19,7 @@ public:
     const Tag *tag;
     typename Policy::ReturnType resource;
 
-    auto operator<=>(Entry &) const = default;
+    constexpr auto operator<=>(const Entry &) const noexcept= default;
   };
 
 private:
@@ -32,7 +32,7 @@ private:
 
 public:
   Registry() = default;
-  ~Registry() = default;
+  virtual ~Registry() = default;
 
   Registry(const Registry &) = delete;
   Registry &operator=(const Registry &) = delete;
@@ -41,7 +41,9 @@ public:
 
   bool add(const Tag *tag, typename Policy::InputType resource);
 
-  template <typename... Args> bool emplace(const Tag *tag, Args &&...args);
+  template <typename... Args>
+    requires(!std::is_same_v<Policy, WeakPtrPolicy<Tag, Resource>>)
+  bool emplace(const Tag *tag, Args &&...args);
 
   bool set(const Tag *tag, typename Policy::InputType resource);
 
@@ -56,7 +58,7 @@ public:
   typename Policy::ExtractType extract(const Tag *tag);
 
   template <typename Func>
-    requires std::is_invocable_v<Func, Tag *, typename Policy::StoredType>
+    requires std::is_invocable_v<Func, Tag *, typename Policy::ReturnType>
   void forEach(Func &&func) const;
 
   std::vector<Entry> getAll() const;

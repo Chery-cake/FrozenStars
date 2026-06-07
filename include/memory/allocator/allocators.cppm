@@ -98,7 +98,7 @@ public:
    * @param ptr pointer to the object being removed
    * the pointer is turned into a nullptr to prevent using of the deleted data
    */
-  void pop(void *&ptr);
+  template <typename T> void pop(T *&ptr);
 
   /**
    * @brief Get the byte offset of the allocations

@@ -28,6 +28,10 @@ ConnectionResult Signals<R(Args...)>::connect(Slot slot) {
 
   std::unique_lock lock(mutex_);
   ConnectionId id = next_id_++;
+  if (id == 0) {
+    return std::unexpected(ConnectionError::MaxConnectionsReached);
+  }
+
   auto slotPtr = std::make_shared<Slot>(std::move(slot));
   connections_.emplace(id, std::move(slotPtr));
   return id;
@@ -85,6 +89,8 @@ void Signals<R(Args...)>::emit_parallel(Args... args) const {
 
 template <typename R, typename... Args>
 template <typename Predicate>
+  requires((std::is_void_v<R> && std::is_invocable_r_v<bool, Predicate>) ||
+           (!std::is_void_v<R> && std::is_invocable_r_v<bool, Predicate, R>))
 void Signals<R(Args...)>::emit_until(Args... args, Predicate &&pred) const {
   auto snapshot = make_snapshot();
 
@@ -94,14 +100,15 @@ void Signals<R(Args...)>::emit_until(Args... args, Predicate &&pred) const {
       }) |
       std::views::transform([](const auto &pair) { return pair.second; });
 
-  std::ranges::find_if(filter, [&pred, &args...](const SlotPtr &slot) {
-    if constexpr (std::is_void_v<R>) {
-      std::invoke(*slot, args...);
-      return pred();
-    } else {
-      return pred(std::invoke(*slot, args...));
-    }
-  });
+  auto result =
+      std::ranges::find_if(filter, [&pred, &args...](const SlotPtr &slot) {
+        if constexpr (std::is_void_v<R>) {
+          std::invoke(*slot, args...);
+          return pred();
+        } else {
+          return pred(std::invoke(*slot, args...));
+        }
+      });
 }
 
 template <typename R, typename... Args>
@@ -115,9 +122,27 @@ std::vector<ConnectionId> Signals<R(Args...)>::connection_ids() const {
 }
 
 template <typename Signature>
-ScopedConnection<Signature>::ScopedConnection(SignalType &signal,
-                                              ConnectionId id,
-                                              bool auto_disconnect)
+ScopedConnection<Signature>::ScopedConnection(ScopedConnection &&other) noexcept
+    : signal_(std::move(other.signal_)), id_(std::exchange(other.id_, 0)),
+      auto_disconnect_(std::exchange(other.auto_disconnect_, false)) {}
+
+template <typename Signature>
+ScopedConnection<Signature> &
+ScopedConnection<Signature>::operator=(ScopedConnection &&other) noexcept {
+  if (this != &other) {
+    if (auto_disconnect_) {
+      reset();
+    }
+    signal_ = std::move(other.signal_);
+    id_ = std::exchange(other.id_, 0);
+    auto_disconnect_ = std::exchange(other.auto_disconnect_, false);
+  }
+  return *this;
+}
+
+template <typename Signature>
+ScopedConnection<Signature>::ScopedConnection(
+    std::shared_ptr<SignalType> signal, ConnectionId id, bool auto_disconnect)
     : signal_(std::move(signal)), id_(id), auto_disconnect_(auto_disconnect) {}
 
 template <typename Signature> ScopedConnection<Signature>::~ScopedConnection() {
@@ -152,18 +177,18 @@ ConnectionId ScopedConnection<Signature>::release() {
 SignalHub::~SignalHub() { clear(); }
 
 template <typename Signature, typename Slot>
-ScopedConnection<Signature> SignalHub::connect(
-    std::shared_ptr<Signals<Signature>> signal,
-    Slot &&slot) { // TODO remove error handling with throw/exceptions
+  requires std::is_constructible_v<typename Signals<Signature>::Slot, Slot>
+std::expected<ScopedConnection<Signature>, ConnectionError>
+SignalHub::connect(std::shared_ptr<Signals<Signature>> signal, Slot &&slot) {
   if (!signal) {
-    throw std::runtime_error("[SignalHub] connection failed: null signal");
+    return std::unexpected(ConnectionError::NullSlot);
   }
 
-  auto idResult = signal->connect(std::forward(slot));
-  if (!idResult) {
-    throw std::runtime_error("[SignalHub] connection failed");
+  ConnectionResult result = signal->connect(std::forward<Slot>(slot));
+  if (!result) {
+    return std::unexpected(result.error());
   }
-  ConnectionId id = *idResult;
+  ConnectionId id = result.value();
 
   std::weak_ptr<Signals<Signature>> weakSig = signal;
 
@@ -178,7 +203,7 @@ ScopedConnection<Signature> SignalHub::connect(
     disconnectors_.emplace_back(std::move(disconector));
   }
 
-  return ScopedConnection<Signature>(weakSig, id, false);
+  return ScopedConnection<Signature>(signal, id, false);
 }
 
 void SignalHub::add_disconnector(DisconnectFunc &&func) {

@@ -7,16 +7,35 @@ import concurrency.queues;
 
 export namespace concurrency::pool::coroutine {
 
+enum class SchedulePolicy : uint8_t {
+  Inline,
+  Enqueue,
+};
+
 inline thread_local bool isPoolWorker = false;
 
 struct Scheduler {
 private:
   queues::TaskQueue &queue_;
 
-public:
-  explicit Scheduler(queues::TaskQueue &queue) : queue_(queue) {};
+  SchedulePolicy schedulePolicy_;
 
-  static bool await_ready() noexcept { return isPoolWorker; };
+public:
+  explicit Scheduler(queues::TaskQueue &queue, SchedulePolicy schedulePolicy)
+      : queue_(queue), schedulePolicy_(schedulePolicy) {};
+
+  bool await_ready() noexcept {
+    if (!isPoolWorker) {
+      return false;
+    }
+    switch (schedulePolicy_) {
+    case SchedulePolicy::Inline:
+      return true;
+    case SchedulePolicy::Enqueue:
+    default:
+      return false;
+    }
+  };
 
   void await_suspend(std::coroutine_handle<> h) {
     queue_.push([h]() mutable { h.resume(); });

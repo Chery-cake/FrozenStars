@@ -14,7 +14,7 @@ struct Pool {
   std::string name;
   queues::QueueKind queueKind = queues::QueueKind::FIFO;
 
-  bool operator<=>(const Pool &) const = default;
+  constexpr auto operator<=>(const Pool &) const noexcept = default;
 };
 
 class ThreadPool {
@@ -24,7 +24,6 @@ private:
 
   std::unique_ptr<queues::TaskQueue> queue_;
   std::vector<std::jthread> threads_;
-  std::stop_source stop_source_;
 
   std::mutex mutex_;
 
@@ -40,10 +39,23 @@ public:
   template <typename F, typename... Args>
   std::future<std::invoke_result_t<F, Args...>> submit(F &&f, Args &&...args);
 
-  coroutine::Scheduler schedule() noexcept;
+  coroutine::Scheduler schedule(coroutine::SchedulePolicy schedulePolicy =
+                                    coroutine::SchedulePolicy::Inline) noexcept;
+  static coroutine::Scheduler
+  schedule(queues::TaskQueue *queue,
+           coroutine::SchedulePolicy schedulePolicy =
+               coroutine::SchedulePolicy::Enqueue) noexcept;
+
+  void wait() {
+    while (!queue_->empty()) {
+    }
+  }
 
   void resize(size_t new_size);
   [[nodiscard]] size_t size() const noexcept { return threads_.size(); }
+
+  [[nodiscard]] queues::TaskQueue *queue() { return queue_.get(); }
+  [[nodiscard]] const queues::TaskQueue *queue() const { return queue_.get(); }
 };
 
 } // namespace concurrency::pool

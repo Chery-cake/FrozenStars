@@ -20,7 +20,7 @@ class Manager {
 private:
   PoolRegistry registry_;
 
-  std::mutex mutex_;
+  std::recursive_mutex mutex_;
 
 public:
   // Signal objects – public so listeners can connect

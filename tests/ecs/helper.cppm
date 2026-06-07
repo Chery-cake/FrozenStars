@@ -11,7 +11,7 @@ export {
 
   void TEST(std::string_view name) {
     ++tests_run;
-    std::println("  [TEST] {} ... ", name);
+    std::println("[TEST] {} ... ", name);
   }
 
   void PASS() {
