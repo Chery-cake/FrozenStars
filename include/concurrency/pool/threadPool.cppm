@@ -39,12 +39,10 @@ public:
   template <typename F, typename... Args>
   std::future<std::invoke_result_t<F, Args...>> submit(F &&f, Args &&...args);
 
-  coroutine::Scheduler schedule(coroutine::SchedulePolicy schedulePolicy =
-                                    coroutine::SchedulePolicy::Inline) noexcept;
-  static coroutine::Scheduler
-  schedule(queues::TaskQueue *queue,
-           coroutine::SchedulePolicy schedulePolicy =
-               coroutine::SchedulePolicy::Enqueue) noexcept;
+  template <coroutine::policy::Queue QP = coroutine::policy::Queue::Inline>
+  coroutine::Scheduler<QP> schedule() noexcept;
+  template <coroutine::policy::Queue QP = coroutine::policy::Queue::Enqueue>
+  static coroutine::Scheduler<QP> schedule(queues::TaskQueue *queue) noexcept;
 
   void wait() {
     while (!queue_->empty()) {

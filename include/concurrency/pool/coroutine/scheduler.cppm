@@ -4,35 +4,27 @@ export module concurrency.pool.coroutine:scheduler;
 
 import std.compat;
 import concurrency.queues;
+import concurrency.pool.coroutine.policy;
 
 export namespace concurrency::pool::coroutine {
 
-enum class SchedulePolicy : uint8_t {
-  Inline,
-  Enqueue,
-};
-
 inline thread_local bool isPoolWorker = false;
 
-struct Scheduler {
+template <policy::Queue QP> struct Scheduler {
 private:
   queues::TaskQueue &queue_;
 
-  SchedulePolicy schedulePolicy_;
-
 public:
-  explicit Scheduler(queues::TaskQueue &queue, SchedulePolicy schedulePolicy)
-      : queue_(queue), schedulePolicy_(schedulePolicy) {};
+  explicit Scheduler(queues::TaskQueue &queue) : queue_(queue) {};
 
-  bool await_ready() noexcept {
+  constexpr bool await_ready() noexcept {
     if (!isPoolWorker) {
       return false;
     }
-    switch (schedulePolicy_) {
-    case SchedulePolicy::Inline:
+    if constexpr (QP == policy::Queue::Inline) {
       return true;
-    case SchedulePolicy::Enqueue:
-    default:
+    }
+    if constexpr (QP == policy::Queue::Enqueue) {
       return false;
     }
   };

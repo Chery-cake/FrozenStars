@@ -73,35 +73,20 @@ void test_submit() {
   PASS();
 }
 
-struct SchedulerProbe {
-  concurrency::pool::ThreadPool *pool = nullptr;
-  std::optional<bool> *result = nullptr;
-
-  struct promise_type {
-    SchedulerProbe get_return_object() {
-      return SchedulerProbe{
-          .pool = nullptr,
-          .result = nullptr,
-      };
-    }
-
-    std::suspend_never initial_suspend() noexcept { return {}; }
-    std::suspend_never final_suspend() noexcept { return {}; }
-    void return_void() noexcept {}
-    void unhandled_exception() { std::terminate(); }
-  };
-};
-
-SchedulerProbe run_scheduler_probe(concurrency::pool::ThreadPool &t,
-                                   std::optional<bool> &result) {
+concurrency::pool::coroutine::coroutineTask<
+    concurrency::pool::coroutine::policy::Suspend::Always, void>
+run_scheduler_probe(concurrency::pool::ThreadPool &t,
+                    std::optional<bool> &result) {
   const bool before = concurrency::pool::coroutine::isPoolWorker;
   co_await t.schedule();
   const bool after = concurrency::pool::coroutine::isPoolWorker;
   result = (!before && after);
 }
 
-SchedulerProbe run_scheduler_probe2(concurrency::queues::TaskQueue *queue,
-                                    std::optional<bool> &result) {
+concurrency::pool::coroutine::coroutineTask<
+    concurrency::pool::coroutine::policy::Suspend::Always, void>
+run_scheduler_probe2(concurrency::queues::TaskQueue *queue,
+                     std::optional<bool> &result) {
   const bool before = concurrency::pool::coroutine::isPoolWorker;
   co_await concurrency::pool::ThreadPool::schedule(queue);
   const bool after = concurrency::pool::coroutine::isPoolWorker;
@@ -115,14 +100,16 @@ void test_scheduler() {
   concurrency::pool::ThreadPool t(p, 2);
 
   std::optional<bool> result;
-  run_scheduler_probe(t, result);
+  auto task1 = run_scheduler_probe(t, result);
+  task1.start();
 
   while (!result.has_value()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
   result.reset();
-  run_scheduler_probe2(t.queue(), result);
+  auto task2 = run_scheduler_probe2(t.queue(), result);
+  task2.start();
 
   while (!result.has_value()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -133,32 +120,17 @@ void test_scheduler() {
   PASS();
 }
 
-template <typename T> struct FutureTask {
-  std::future<T> future;
-
-  struct promise_type {
-    std::promise<T> promise;
-
-    FutureTask get_return_object() { return FutureTask{promise.get_future()}; }
-    std::suspend_never initial_suspend() noexcept { return {}; }
-    std::suspend_never final_suspend() noexcept { return {}; }
-
-    void return_value(T value) noexcept { promise.set_value(std::move(value)); }
-
-    void unhandled_exception() {
-      promise.set_exception(std::current_exception());
-    }
-  };
-};
-
-FutureTask<bool> run_scheduler_return_probe(concurrency::pool::ThreadPool &t) {
+concurrency::pool::coroutine::coroutineTask<
+    concurrency::pool::coroutine::policy::Suspend::Always, bool>
+run_scheduler_return_probe(concurrency::pool::ThreadPool &t) {
   const bool before = concurrency::pool::coroutine::isPoolWorker;
   co_await t.schedule();
   const bool after = concurrency::pool::coroutine::isPoolWorker;
   co_return (!before && after);
 }
 
-FutureTask<bool>
+concurrency::pool::coroutine::coroutineTask<
+    concurrency::pool::coroutine::policy::Suspend::Always, bool>
 run_scheduler_return_probe2(concurrency::queues::TaskQueue *queue) {
   const bool before = concurrency::pool::coroutine::isPoolWorker;
   co_await concurrency::pool::ThreadPool::schedule(queue);
@@ -173,10 +145,10 @@ void test_scheduler_return_value() {
   concurrency::pool::ThreadPool t(p, 2);
 
   auto r1 = run_scheduler_return_probe(t);
-  assert(r1.future.get());
+  assert(r1.get());
 
   auto r2 = run_scheduler_return_probe2(t.queue());
-  assert(r2.future.get());
+  assert(r2.get());
 
   PASS();
 }

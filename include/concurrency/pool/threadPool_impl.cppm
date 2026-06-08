@@ -70,14 +70,14 @@ ThreadPool::submit(F &&f, Args &&...args) {
   return fut;
 }
 
-inline coroutine::Scheduler
-ThreadPool::schedule(coroutine::SchedulePolicy schedulePolicy) noexcept {
-  return coroutine::Scheduler(*queue_, schedulePolicy);
+template <coroutine::policy::Queue QP>
+inline coroutine::Scheduler<QP> ThreadPool::schedule() noexcept {
+  return coroutine::Scheduler<QP>(*queue_);
 }
-inline coroutine::Scheduler
-ThreadPool::schedule(queues::TaskQueue *queue,
-                     coroutine::SchedulePolicy schedulePolicy) noexcept {
-  return coroutine::Scheduler(*queue, schedulePolicy);
+template <coroutine::policy::Queue QP>
+inline coroutine::Scheduler<QP>
+ThreadPool::schedule(queues::TaskQueue *queue) noexcept {
+  return coroutine::Scheduler<QP>(*queue);
 }
 
 inline void ThreadPool::resize(size_t new_size) {
