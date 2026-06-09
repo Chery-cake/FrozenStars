@@ -6,6 +6,10 @@ import std.compat;
 import concurrency.queues;
 import concurrency.pool.coroutine.policy;
 
+import :task;
+import :task_void;
+import :state;
+
 export namespace concurrency::pool::coroutine {
 
 inline thread_local bool isPoolWorker = false;
