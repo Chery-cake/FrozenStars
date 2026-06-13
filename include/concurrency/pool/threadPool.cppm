@@ -1,5 +1,6 @@
 module;
 
+#include "FrozenStars_export.h"
 #include <cstddef>
 
 export module concurrency.pool:threadPool;
@@ -10,14 +11,14 @@ import concurrency.pool.coroutine;
 
 export namespace concurrency::pool {
 
-struct Pool {
+struct FROZENSTARS_API Pool {
   std::string name;
   queues::QueueKind queueKind = queues::QueueKind::FIFO;
 
   constexpr auto operator<=>(const Pool &) const noexcept = default;
 };
 
-class ThreadPool {
+class FROZENSTARS_API ThreadPool {
 private:
   static void worker_loop(const std::stop_token &stoken,
                           queues::TaskQueue &queue);

@@ -1,11 +1,13 @@
 module;
 
+#include "FrozenStars_export.h"
+
 export module ecs.component:dependencies;
 import std.compat;
 
 export namespace ecs::component {
 
-template <typename... Args> struct ComponentDependencies {
+template <typename... Args> struct FROZENSTARS_API ComponentDependencies {
   using required = std::tuple<>;
 };
 

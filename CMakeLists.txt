@@ -169,6 +169,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     $<$<CONFIG:Debug>:ENGINE_DEBUG>
 )
 
+create_export(${PROJECT_NAME})
+
 # ==============================================================================
 # Apply Build Configuration
 # ==============================================================================

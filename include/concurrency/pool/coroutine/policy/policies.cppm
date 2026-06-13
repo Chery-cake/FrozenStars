@@ -1,17 +1,19 @@
 module;
 
+#include "FrozenStars_export.h"
+
 export module concurrency.pool.coroutine.policy:policies;
 
 import std.compat;
 
 export namespace concurrency::pool::coroutine::policy {
 
-enum class Queue : uint8_t {
+enum class FROZENSTARS_API Queue : uint8_t {
   Inline,
   Enqueue,
 };
 
-enum class Suspend : uint8_t {
+enum class FROZENSTARS_API Suspend : uint8_t {
   Always,
   Never,
 };

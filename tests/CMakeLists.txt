@@ -27,6 +27,11 @@ function(add_tests_from_folder FOLDER)
         target_compile_definitions(${test_exe} PRIVATE
             $<$<CONFIG:Debug>:ENGINE_DEBUG>
         )
+        # Force assert() to remain active even in Release builds
+        target_compile_options(${test_exe} PRIVATE
+            $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:GNU,Clang,AppleClang>>:-UNDEBUG>
+            $<$<AND:$<CONFIG:Release>,$<CXX_COMPILER_ID:MSVC>>:/UNDEBUG>
+        )
         add_test(NAME ${test_name} COMMAND ${test_exe})
     endforeach()
 endfunction()

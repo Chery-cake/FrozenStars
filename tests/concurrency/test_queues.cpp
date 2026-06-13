@@ -1,5 +1,5 @@
-import concurrency_helper;
 #include <cassert>
+import concurrency_helper;
 
 void test_fifo() {
   TEST("fifo");

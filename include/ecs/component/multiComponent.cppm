@@ -1,5 +1,7 @@
 module;
 
+#include "FrozenStars_export.h"
+
 export module ecs.component:multiComponent;
 
 import std.compat;
@@ -7,7 +9,7 @@ import :dependencies;
 
 export namespace ecs::component {
 
-template <typename T, size_t N> struct MultiComponent {
+template <typename T, size_t N> struct FROZENSTARS_API MultiComponent {
   std::array<T, N> components;
 
   MultiComponent() = default;
@@ -31,7 +33,7 @@ template <typename T, size_t N> struct MultiComponent {
 };
 
 template <typename T, size_t N>
-struct ComponentDependencies<MultiComponent<T, N>> {
+struct FROZENSTARS_API ComponentDependencies<MultiComponent<T, N>> {
   using required = typename ComponentDependencies<T>::required;
 };
 

@@ -1,12 +1,14 @@
 module;
 
+#include "FrozenStars_export.h"
+
 export module concurrency.pool.coroutine:state;
 
 import std.compat;
 
 export namespace concurrency::pool::coroutine {
 
-struct CoroutineState {
+struct FROZENSTARS_API CoroutineState {
   std::coroutine_handle<> handle;
   explicit CoroutineState(std::coroutine_handle<> h) : handle(h) {}
   ~CoroutineState() {

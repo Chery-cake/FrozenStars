@@ -1,5 +1,7 @@
 module;
 
+#include "FrozenStars_export.h"
+
 export module concurrency.pool.coroutine:scheduler;
 
 import std.compat;
@@ -14,7 +16,7 @@ export namespace concurrency::pool::coroutine {
 
 inline thread_local bool isPoolWorker = false;
 
-template <policy::Queue QP> struct Scheduler {
+template <policy::Queue QP> struct FROZENSTARS_API Scheduler {
 private:
   queues::TaskQueue &queue_;
 

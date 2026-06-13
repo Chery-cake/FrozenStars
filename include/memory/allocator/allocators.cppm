@@ -1,5 +1,7 @@
 module;
 
+#include "FrozenStars_export.h"
+
 export module memory.allocator:allocators;
 
 import std.compat;
@@ -10,7 +12,7 @@ export namespace memory::allocator {
  * @brief Base class for memory allocation
  * The memory is stored in a unique_ptr<uint_8>
  */
-template <size_t size> class Memory {
+template <size_t size> class FROZENSTARS_API Memory {
 private:
   std::unique_ptr<uint8_t, void (*)(uint8_t *)> memory_;
 
@@ -44,7 +46,7 @@ public:
 /**
  * @brief Bump Allocator for fast allocations
  */
-template <size_t size> class Bump : public Memory<size> {
+template <size_t size> class FROZENSTARS_API Bump : public Memory<size> {
 private:
   size_t offset_;
 
@@ -76,7 +78,7 @@ public:
 /**
  * @brief Stack Allocator for variable allocations
  */
-template <size_t size> class Stack : public Memory<size> {
+template <size_t size> class FROZENSTARS_API Stack : public Memory<size> {
 private:
   size_t offset_;
 
@@ -111,7 +113,7 @@ public:
  * @brief Pool Allocator for multiple identical allocations
  */
 template <typename T, size_t poolSize>
-class Pool : public Memory<sizeof(T) * poolSize> {
+class FROZENSTARS_API Pool : public Memory<sizeof(T) * poolSize> {
 private:
   union Node {
     alignas(std::max(alignof(T),

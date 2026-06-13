@@ -1,5 +1,7 @@
 module;
 
+#include "FrozenStars_export.h"
+
 export module resource:registry;
 
 import std.compat;
@@ -10,7 +12,7 @@ export namespace resource {
 
 template <typename Tag, typename Resource, typename Policy>
   requires OwnerShipPolicy<Tag, Resource, Policy>
-class Registry {
+class FROZENSTARS_API Registry {
 public:
   using SignalCall = void(const Tag *, typename Policy::ReturnType);
   using SignalSlot = std::move_only_function<SignalCall>;
@@ -19,7 +21,7 @@ public:
     const Tag *tag;
     typename Policy::ReturnType resource;
 
-    constexpr auto operator<=>(const Entry &) const noexcept= default;
+    constexpr auto operator<=>(const Entry &) const noexcept = default;
   };
 
 private:
